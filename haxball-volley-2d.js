@@ -38,6 +38,7 @@ var teamS;
 
 var lastPlayersTouched;
 var totalTouches;
+var goalCheering;
 var point = [{ "x": 0, "y": 0 }, { "x": 0, "y": 0 }];
 var ballSpeed;
 var goldenGoal = false;
@@ -77,7 +78,7 @@ function pointDistance (p1, p2) {
 
 /* GAME FUNCTIONS */
 
-function getPlayerCount(team) {
+function getPlayerCount (team) {
     var playerCount = 0
     var players = room.getPlayerList();
     for(var i = 0; i < players.length; i++) {
@@ -88,7 +89,7 @@ function getPlayerCount(team) {
     return playerCount;
 }
 
-function getBallIndex() {
+function getBallIndex () {
     for (var i = 0; i < room.getDiscCount(); i++) {
         if ((room.getDiscProperties(i).cGroup & room.CollisionFlags.ball) != 0) {
             return i;
@@ -98,7 +99,7 @@ function getBallIndex() {
     return -1;
 }
 
-function givePenalty(team) {
+function givePenalty (team) {
     room.setDiscProperties(getBallIndex(), {x: team == Team.RED ? -415 : 415, y: 110, xspeed : 0, yspeed : 10});
     return;
 }
@@ -233,6 +234,7 @@ room.onPlayerActivity = function (player) {
 room.onGameStart = function (byPlayer) {
     goldenGoal = false;
     totalTouches = 0;
+    goalCheering = false;
     lastPlayersTouched = [null, null];
 }
 
@@ -246,6 +248,9 @@ room.onGameUnpause = function (byPlayer) {
 }
 
 room.onPlayerBallKick = function (player) {
+    if (goalCheering) {
+        return;
+    }
     var teamCount = getPlayerCount(player.team);
     if ((lastPlayersTouched[0] != null && lastPlayersTouched[0].id == player.id) && teamCount != 1) {
         room.sendChat("❌ Penalty! " + player.name + " touched the ball twice!");
@@ -258,7 +263,7 @@ room.onPlayerBallKick = function (player) {
                 room.sendChat("❌ Penalty! Too many passes!");
                 givePenalty(player.team);
             }
-        } else if (totalTouches > 2) {
+        } else if (totalTouches > 200) {
             room.sendChat("❌ Penalty! " + player.name + " touched the ball thrice!");
                 givePenalty(player.team);
         }
@@ -277,6 +282,7 @@ room.onPlayerBallKick = function (player) {
 }
 
 room.onTeamGoal = function (team) {
+    goalCheering = true
     const scores = room.getScores();
     if (lastPlayersTouched[0] != null && lastPlayersTouched[0].team == team) {
         if (lastPlayersTouched[1] != null && lastPlayersTouched[1].team == team) {
@@ -297,6 +303,7 @@ room.onTeamGoal = function (team) {
 }
 
 room.onPositionsReset = function () {
+    goalCheering = false;
     lastPlayersTouched = [null, null];
 }
 
@@ -315,6 +322,10 @@ room.onStadiumChange = function (newStadiumName, byPlayer) {
 }
 
 room.onGameTick = function () {
+    if (((room.getBallPosition().y > 20 && Math.abs(room.getBallPosition().x) < 5) && !goalCheering) && lastPlayersTouched[0] != null) {
+        room.sendChat("❌ Penalty! " + lastPlayersTouched[0].name + " bug abused!");
+        givePenalty(lastPlayersTouched[0].team);
+    }
     checkTime();
     getStats();
 }
