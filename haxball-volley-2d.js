@@ -2,7 +2,7 @@
 
 /* ROOM */
 
-const roomName = "🏐 [YANR] VOLLEY 2D 🏐";
+const roomName = "🏐 [YANR] VOLLEY 2D";
 const botName = "VolleyBot";
 const maxPlayers = 21;
 const roomPublic = false;
@@ -188,7 +188,7 @@ function getStats () {
 /* PLAYER MOVEMENT */
 
 room.onPlayerJoin = function (player) {
-    room.sendChat("[PM] 👋 Welcome " + player.name + " ! This 24/7 host is for a community. Discord: https://discord.gg/6V5prAK ! [RULES: 1 TOUCH PER PLAYER, 4 PASSES MAXIMUM]", player.id);
+    room.sendChat("[PM] 👋 Welcome " + player.name + "!", player.id);
     updateTeams();
     updateAdmins();
 }
@@ -248,26 +248,51 @@ room.onGameUnpause = function (byPlayer) {
 room.onPlayerBallKick = function (player) {
     var teamCount = getPlayerCount(player.team);
     if ((lastPlayersTouched[0] != null && lastPlayersTouched[0].id == player.id) && teamCount != 1) {
-        room.sendChat("Penalty! " + player.name + " touched the ball twice!");
+        room.sendChat("❌ Penalty! " + player.name + " touched the ball twice!");
         givePenalty(player.team);
     }
     if (lastPlayersTouched[0] != null && lastPlayersTouched[0].team == player.team) {
         totalTouches = totalTouches + 1;
         if (teamCount != 1) {
             if (totalTouches > 3) {
-                room.sendChat("Penalty! Too many passes!");
+                room.sendChat("❌ Penalty! Too many passes!");
                 givePenalty(player.team);
             }
         } else if (totalTouches > 2) {
-            room.sendChat("Penalty! " + player.name + " touched the ball thrice!");
+            room.sendChat("❌ Penalty! " + player.name + " touched the ball thrice!");
                 givePenalty(player.team);
         }
     } else { 
-        totalTouches = 1;
+        if (lastPlayersTouched[0] != null && player.position.x >= -30 && player.position.x <= 30 && player.position.y <= 10){
+            totalTouches = 0;
+            room.sendChat("🏐 Nice block by " + player.name + "!");
+        } else {
+            totalTouches = 1
+        }
     }
     if (lastPlayersTouched[0] == null || player.id != lastPlayersTouched[0].id) {
         lastPlayersTouched[1] = lastPlayersTouched[0];
         lastPlayersTouched[0] = player;
+    }
+}
+
+room.onTeamGoal = function (team) {
+    const scores = room.getScores();
+    if (lastPlayersTouched[0] != null && lastPlayersTouched[0].team == team) {
+        if (lastPlayersTouched[1] != null && lastPlayersTouched[1].team == team) {
+            room.sendChat("🏐 " + getTime(scores) + " Point for " + (team == Team.RED ? "🔴" : "🔵"));
+        }
+        else {
+            room.sendChat("🏐 " + getTime(scores) + " Point for " + (team == Team.RED ? "🔴" : "🔵"));
+        }
+    }
+    else {
+        room.sendChat("🏐 " + getTime(scores) + " Point for " + (team == Team.RED ? "🔴" : "🔵"));
+    }
+    if (scores.red == scores.scoreLimit || scores.blue == scores.scoreLimit || goldenGoal == true) {
+        endGame(team);
+        goldenGoal = false;
+        setTimeout(() => { room.stopGame(); }, 1000);
     }
 }
 
