@@ -1,2 +1,2 @@
-# haxball
+# Haxball
 Haxball custom maps.
