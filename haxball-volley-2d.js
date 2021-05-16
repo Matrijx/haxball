@@ -245,6 +245,7 @@ room.onGameStart = function (byPlayer) {
     potentialBugAbusing = false;
     abusingPosition = 0;
     lastPlayersTouched = [null, null];
+    lastPlayersTouchedTime = null;
     abusingPlayer = null;
 }
 
@@ -266,14 +267,14 @@ room.onPlayerBallKick = function (player) {
         room.sendChat("❌ Penalty! " + player.name + " touched the ball twice!");
         givePenalty(player.team);
     }
-    if (lastPlayersTouched[0] != null && lastPlayersTouched[0].team == player.team) {
+    if (lastPlayersTouched[0] != null && lastPlayersTouched[0].team == player.team && (Date.now() - lastPlayersTouchedTime) > 100) {
         totalTouches = totalTouches + 1;
         if (teamCount != 1) {
             if (totalTouches > 3) {
                 room.sendChat("❌ Penalty! Too many passes!");
                 givePenalty(player.team);
             }
-        } else if (totalTouches > 2) {
+        } else if (totalTouches > 2 ) {
             room.sendChat("❌ Penalty! " + player.name + " touched the ball thrice!");
                 givePenalty(player.team);
         }
@@ -289,6 +290,7 @@ room.onPlayerBallKick = function (player) {
         lastPlayersTouched[1] = lastPlayersTouched[0];
         lastPlayersTouched[0] = player;
     }
+    lastPlayersTouchedTime = Date.now();
 }
 
 room.onTeamGoal = function (team) {
@@ -334,7 +336,9 @@ room.onStadiumChange = function (newStadiumName, byPlayer) {
 room.onGameTick = function () {
     if (!goalCheering && (room.getBallPosition().x * oldX < 0 && lastPlayersTouched[0] != null)) {
 
-        yAtNet = oldY + (room.getBallPosition().y - oldY) / (room.getBallPosition().x - oldX) * Math.abs(oldX);
+        var slope = (room.getBallPosition().x - oldX) != 0 ? (room.getBallPosition().y - oldY) / (room.getBallPosition().x - oldX) : 0;
+        yAtNet = oldY + slope * Math.abs(oldX);
+
         if (yAtNet > 25 && (!abusingTimeStamp || Date.now() - abusingTimeStamp > 1000)) {
             room.sendChat("❌ Penalty! " + lastPlayersTouched[0].name + " bug abused!");
             givePenalty(lastPlayersTouched[0].team);
