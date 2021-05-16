@@ -48,6 +48,7 @@ var goldenGoal = false;
 var abusingPlayer;
 var oldX = 0;
 var oldY = 0;
+var blocked = false;
 
 /* AUXILIARY */
 
@@ -245,7 +246,7 @@ room.onGameStart = function (byPlayer) {
     potentialBugAbusing = false;
     abusingPosition = 0;
     lastPlayersTouched = [null, null];
-    lastPlayersTouchedTime = null;
+    lastPlayersTouchedTime = Date.now();
     abusingPlayer = null;
 }
 
@@ -263,11 +264,12 @@ room.onPlayerBallKick = function (player) {
         return;
     }
     var teamCount = getPlayerCount(player.team);
-    if ((lastPlayersTouched[0] != null && lastPlayersTouched[0].id == player.id) && teamCount != 1) {
+    if (((lastPlayersTouched[0] != null && lastPlayersTouched[0].id == player.id) && teamCount != 1) && !blocked) {
         room.sendChat("❌ Penalty! " + player.name + " touched the ball twice!");
         givePenalty(player.team);
     }
-    if (lastPlayersTouched[0] != null && lastPlayersTouched[0].team == player.team && (Date.now() - lastPlayersTouchedTime) > 100) {
+    blocked = false;
+    if (lastPlayersTouched[0] != null && lastPlayersTouched[0].team == player.team && (Date.now() - lastPlayersTouchedTime) > 200) {
         totalTouches = totalTouches + 1;
         if (teamCount != 1) {
             if (totalTouches > 3) {
@@ -281,6 +283,7 @@ room.onPlayerBallKick = function (player) {
     } else { 
         if (lastPlayersTouched[0] != null && player.position.x >= -30 && player.position.x <= 30 && player.position.y <= 10){
             totalTouches = 0;
+            blocked = true;
             room.sendChat("🏐 Nice block by " + player.name + "!");
         } else {
             totalTouches = 1
