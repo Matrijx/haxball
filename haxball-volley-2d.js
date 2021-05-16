@@ -334,9 +334,7 @@ room.onStadiumChange = function (newStadiumName, byPlayer) {
 room.onGameTick = function () {
     if (!goalCheering && (room.getBallPosition().x * oldX < 0 && lastPlayersTouched[0] != null)) {
 
-        var slope = (room.getBallPosition().x - oldX) != 0 ? (room.getBallPosition().y - oldY) / (room.getBallPosition().x - oldX) : 0;
-        yAtNet = oldY + slope * Math.abs(oldX);
-
+        yAtNet = oldY + (room.getBallPosition().y - oldY) / (room.getBallPosition().x - oldX) * Math.abs(oldX);
         if (yAtNet > 25 && (!abusingTimeStamp || Date.now() - abusingTimeStamp > 1000)) {
             room.sendChat("❌ Penalty! " + lastPlayersTouched[0].name + " bug abused!");
             givePenalty(lastPlayersTouched[0].team);
